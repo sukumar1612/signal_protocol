@@ -6,12 +6,36 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from src.VXEdDSA.signature import sign_public_key
 
 
-class EphemeralKeyBundle:
+class EphemeralKeyBundlePublic:
+    def __init__(self, IK_public: bytes, ephemeral_key_public: bytes):
+        self.IK_public = X25519PublicKey.from_public_bytes(IK_public)
+        self.ephemeral_key_public = X25519PublicKey.from_public_bytes(ephemeral_key_public)
+
+    def export(self):
+        return {
+            'IK_public': self.IK_public.public_bytes(serialization.Encoding.Raw,
+                                                     serialization.PublicFormat.Raw),
+            'ephemeral_key_public': self.ephemeral_key_public.public_bytes(serialization.Encoding.Raw,
+                                                                           serialization.PublicFormat.Raw)
+        }
+
+
+class EphemeralKeyBundlePrivate:
     """In the example given in the signal documentation, this would be the alice side of things"""
 
-    def __init__(self):
-        self.IK_private, self.IK_public = generate_keys()
+    def __init__(self, IK_public: X25519PublicKey, IK_private: X25519PrivateKey):
+        self.IK_private = IK_private
+        self.IK_public = IK_public
         self.ephemeral_key_private, self.ephemeral_key_public = generate_keys()
+
+    def publish_keys(self):
+        keys = {
+            'IK_public': self.IK_public.public_bytes(serialization.Encoding.Raw,
+                                                     serialization.PublicFormat.Raw),
+            'ephemeral_key_public': self.ephemeral_key_public.public_bytes(serialization.Encoding.Raw,
+                                                                           serialization.PublicFormat.Raw)
+        }
+        return EphemeralKeyBundlePublic(**keys)
 
 
 class PreKeyBundlePublic:
@@ -25,13 +49,13 @@ class PreKeyBundlePublic:
 
     def export_keys(self):
         return {
-            'IK_public': self.IK_public.public_bytes(serialization.Encoding.PEM,
-                                                     serialization.PublicFormat.SubjectPublicKeyInfo),
-            'SPK_public': self.SPK_public.public_bytes(serialization.Encoding.PEM,
-                                                       serialization.PublicFormat.SubjectPublicKeyInfo),
+            'IK_public': self.IK_public.public_bytes(serialization.Encoding.Raw,
+                                                     serialization.PublicFormat.Raw),
+            'SPK_public': self.SPK_public.public_bytes(serialization.Encoding.Raw,
+                                                       serialization.PublicFormat.Raw),
             'signature': self.signature,
-            'one_time_key': self.OP_key_public.public_bytes(serialization.Encoding.PEM,
-                                                            serialization.PublicFormat.SubjectPublicKeyInfo)
+            'one_time_key': self.OP_key_public.public_bytes(serialization.Encoding.Raw,
+                                                            serialization.PublicFormat.Raw),
         }
 
 
@@ -88,6 +112,11 @@ class PreKeyBundlePrivate:
             keys['SPK_public'] = X25519PublicKey.from_public_bytes(keys['SPK_public'])
             keys['OP_key_private'] = [X25519PrivateKey.from_private_bytes(key) for key in keys['OP_key_private']]
         return PreKeyBundlePrivate(**keys)
+
+
+def create_new_ephemeral_key_bundle():
+    IK_keys = generate_keys()
+    return EphemeralKeyBundlePrivate(IK_public=IK_keys[1], IK_private=IK_keys[0])
 
 
 def create_new_pre_key_bundle(number_of_onetime_pre_keys: int):
