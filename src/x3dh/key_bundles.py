@@ -3,7 +3,7 @@ import pickle
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 
-from src.VXEdDSA.signature import sign_public_key
+from src.XEdDSA.signature import sign_public_key
 
 
 class EphemeralKeyBundlePublic:

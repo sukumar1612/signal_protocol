@@ -29,6 +29,7 @@ class Session:
         self.mode = mode
         self.shared_key: bytes = None
         self.salt: bytes = None
+        self.ratchet_count: int = 0
         self.DH_key_private, self.DH_key_public = generate_keys()
         if self.mode == Mode.alice:
             self.shared_key = Session.generate_shared_key_from_pre_key_bundle(
@@ -59,19 +60,21 @@ class Session:
         return key_derivation_function(DH1 + DH2 + DH3 + DH4)
 
     def symmetric_key_ratchet(self):
+        self.ratchet_count += 1
         self.shared_key = key_derivation_function(self.shared_key, self.salt)
 
     def double_ratchet(self, public_key: X25519PublicKey):
         self.salt = self.DH_key_private.exchange(public_key)
+        self.ratchet_count = 0
         self.symmetric_key_ratchet()
 
     def update_diffie_hellman_keys(self):
         self.DH_key_private, self.DH_key_public = generate_keys()
 
     def get_shared_key(self):
-        m = hashlib.sha256()
-        m.update(self.shared_key)
-        return m.digest()
+        sha = hashlib.sha256()
+        sha.update(self.shared_key)
+        return sha.digest()
 
     def encrypt_message(self, message: str):
         cipher = Cipher(algorithms.AES(self.get_shared_key()), modes.ECB())
@@ -81,7 +84,7 @@ class Session:
     def decrypt_message(self, message: bytes):
         cipher = Cipher(algorithms.AES(self.get_shared_key()), modes.ECB())
         decrypter = cipher.decryptor()
-        return (decrypter.update(message) + decrypter.finalize()).decode('utf-8')
+        return decrypter.update(message) + decrypter.finalize()
 
 
 if __name__ == '__main__':
@@ -96,12 +99,17 @@ if __name__ == '__main__':
     x2 = Session(pre_key_bundle=bob_pre_key_bundle, ephemeral_key_bundle=alice, mode=Mode.alice)
 
     for i in range(10):
-        x1.double_ratchet(x2.DH_key_public)
-        x2.double_ratchet(x1.DH_key_public)
-
-        x1.update_diffie_hellman_keys()
-        x2.update_diffie_hellman_keys()
-
         print(x1.shared_key)
         print(x2.shared_key)
         print(x1.shared_key == x2.shared_key)
+        print(x1.ratchet_count)
+
+        if i % 4 == 0:
+            x1.double_ratchet(x2.DH_key_public)
+            x2.double_ratchet(x1.DH_key_public)
+
+            x1.update_diffie_hellman_keys()
+            x2.update_diffie_hellman_keys()
+        else:
+            x1.symmetric_key_ratchet()
+            x2.symmetric_key_ratchet()
