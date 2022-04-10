@@ -1,7 +1,9 @@
 import enum
+import hashlib
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from src.x3dh.key_bundles import PreKeyBundlePrivate, PreKeyBundlePublic, EphemeralKeyBundlePrivate, \
@@ -59,12 +61,27 @@ class Session:
     def symmetric_key_ratchet(self):
         self.shared_key = key_derivation_function(self.shared_key, self.salt)
 
-    def diffie_hellman_ratchet(self, public_key: X25519PublicKey):
+    def double_ratchet(self, public_key: X25519PublicKey):
         self.salt = self.DH_key_private.exchange(public_key)
         self.symmetric_key_ratchet()
 
     def update_diffie_hellman_keys(self):
         self.DH_key_private, self.DH_key_public = generate_keys()
+
+    def get_shared_key(self):
+        m = hashlib.sha256()
+        m.update(self.shared_key)
+        return m.digest()
+
+    def encrypt_message(self, message: str):
+        cipher = Cipher(algorithms.AES(self.get_shared_key()), modes.ECB())
+        encryptor = cipher.encryptor()
+        return encryptor.update(message.encode('utf-8')) + encryptor.finalize()
+
+    def decrypt_message(self, message: bytes):
+        cipher = Cipher(algorithms.AES(self.get_shared_key()), modes.ECB())
+        decrypter = cipher.decryptor()
+        return (decrypter.update(message) + decrypter.finalize()).decode('utf-8')
 
 
 if __name__ == '__main__':
@@ -79,8 +96,8 @@ if __name__ == '__main__':
     x2 = Session(pre_key_bundle=bob_pre_key_bundle, ephemeral_key_bundle=alice, mode=Mode.alice)
 
     for i in range(10):
-        x1.diffie_hellman_ratchet(x2.DH_key_public)
-        x2.diffie_hellman_ratchet(x1.DH_key_public)
+        x1.double_ratchet(x2.DH_key_public)
+        x2.double_ratchet(x1.DH_key_public)
 
         x1.update_diffie_hellman_keys()
         x2.update_diffie_hellman_keys()
