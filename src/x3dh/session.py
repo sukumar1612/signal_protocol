@@ -46,6 +46,9 @@ class Session:
         DH3 = ephemeral_key_bundle_private.IK_private.exchange(pre_key_bundle_public.SPK_public)
         DH4 = ephemeral_key_bundle_private.ephemeral_key_private.exchange(pre_key_bundle_public.OP_key_public)
 
+        if pre_key_bundle_public.verify_signature():
+            print("valid signature")
+
         return key_derivation_function(DH1 + DH2 + DH3 + DH4)
 
     @staticmethod

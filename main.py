@@ -9,6 +9,7 @@ if __name__ == '__main__':
     # bob
 
     bob = create_new_pre_key_bundle(number_of_onetime_pre_keys=10)
+    # bob = PreKeyBundlePrivate.load_data("key.txt")
     bob_pre_key_bundle = bob.publish_keys()
     # key exchange
 

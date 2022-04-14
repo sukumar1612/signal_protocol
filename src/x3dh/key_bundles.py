@@ -3,10 +3,11 @@ import pickle
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 
-from src.XEdDSA.signature import sign_public_key
+from src.EdDSA.signature import sign_public_key, verify_public_key
 
 
 class EphemeralKeyBundlePublic:
+    """ enter keys in RAW bytes format"""
     def __init__(self, IK_public: bytes, ephemeral_key_public: bytes):
         self.IK_public = X25519PublicKey.from_public_bytes(IK_public)
         self.ephemeral_key_public = X25519PublicKey.from_public_bytes(ephemeral_key_public)
@@ -39,13 +40,15 @@ class EphemeralKeyBundlePrivate:
 
 
 class PreKeyBundlePublic:
-    """ enter keys in PEM and X.509 subjectPublicKeyInfo with PKCS#1 format"""
+    """ enter keys in RAW bytes format"""
 
-    def __init__(self, IK_public: bytes, SPK_public: bytes, signature: bytes, OP_key_public: bytes):
+    def __init__(self, IK_public: bytes, SPK_public: bytes, signature: bytes, OP_key_public: bytes,
+                 verify_signature_public_key: bytes):
         self.IK_public = X25519PublicKey.from_public_bytes(IK_public)
         self.SPK_public = X25519PublicKey.from_public_bytes(SPK_public)
         self.signature = signature
         self.OP_key_public = X25519PublicKey.from_public_bytes(OP_key_public)
+        self.verify_signature_public_key = verify_signature_public_key
 
     def export_keys(self):
         return {
@@ -58,6 +61,10 @@ class PreKeyBundlePublic:
                                                             serialization.PublicFormat.Raw),
         }
 
+    def verify_signature(self):
+        return verify_public_key(verify_signature_public_key=self.verify_signature_public_key,
+                                 signed_public_key=self.signature)
+
 
 class PreKeyBundlePrivate:
     """In the example given in the signal documentation, this would be the bob side of things"""
@@ -68,7 +75,11 @@ class PreKeyBundlePrivate:
         self.IK_public = IK_public
         self.SPK_private = SPK_private
         self.SPK_public = SPK_public
-        self.signature = sign_public_key(private_key=self.IK_private, public_key=self.SPK_public)
+        self.signature, self.verify_signature_public_key = sign_public_key(
+            seed=IK_private.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
+                                          serialization.NoEncryption()),
+            public_key=self.SPK_public.public_bytes(serialization.Encoding.Raw,
+                                                    serialization.PublicFormat.Raw))
         self.OP_key_private = OP_key_private
 
     def publish_keys(self) -> PreKeyBundlePublic:
@@ -80,7 +91,8 @@ class PreKeyBundlePrivate:
                                                        serialization.PublicFormat.Raw),
             'signature': self.signature,
             'OP_key_public': one_time_key.public_key().public_bytes(serialization.Encoding.Raw,
-                                                                    serialization.PublicFormat.Raw)
+                                                                    serialization.PublicFormat.Raw),
+            'verify_signature_public_key': self.verify_signature_public_key
         }
         return PreKeyBundlePublic(**keys)
 
