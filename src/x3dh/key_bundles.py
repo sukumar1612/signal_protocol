@@ -8,6 +8,7 @@ from src.EdDSA.signature import sign_public_key, verify_public_key
 
 class EphemeralKeyBundlePublic:
     """ enter keys in RAW bytes format"""
+
     def __init__(self, IK_public: bytes, ephemeral_key_public: bytes):
         self.IK_public = X25519PublicKey.from_public_bytes(IK_public)
         self.ephemeral_key_public = X25519PublicKey.from_public_bytes(ephemeral_key_public)
@@ -59,6 +60,7 @@ class PreKeyBundlePublic:
             'signature': self.signature,
             'one_time_key': self.OP_key_public.public_bytes(serialization.Encoding.Raw,
                                                             serialization.PublicFormat.Raw),
+            'verify_signature_public_key': self.verify_signature_public_key,
         }
 
     def verify_signature(self):

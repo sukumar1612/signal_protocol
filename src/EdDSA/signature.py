@@ -10,6 +10,7 @@ from nacl.public import (
 from nacl.utils import StringFixer, random
 
 
+# i took this from nacl.signing and modified it to suite the needs for this project
 class SignedMessage(bytes):
     _signature: bytes
     _message: bytes
