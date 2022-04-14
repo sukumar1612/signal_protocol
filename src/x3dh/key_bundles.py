@@ -25,10 +25,12 @@ class EphemeralKeyBundlePublic:
 class EphemeralKeyBundlePrivate:
     """In the example given in the signal documentation, this would be the alice side of things"""
 
-    def __init__(self, IK_public: X25519PublicKey, IK_private: X25519PrivateKey):
+    def __init__(self, IK_public: X25519PublicKey, IK_private: X25519PrivateKey,
+                 ephemeral_key_public: X25519PublicKey, ephemeral_key_private: X25519PrivateKey):
         self.IK_private = IK_private
         self.IK_public = IK_public
-        self.ephemeral_key_private, self.ephemeral_key_public = generate_keys()
+        self.ephemeral_key_private = ephemeral_key_private
+        self.ephemeral_key_public = ephemeral_key_public
 
     def publish_keys(self):
         keys = {
@@ -38,6 +40,17 @@ class EphemeralKeyBundlePrivate:
                                                                            serialization.PublicFormat.Raw)
         }
         return EphemeralKeyBundlePublic(**keys)
+
+    @staticmethod
+    def load_data(location: str):
+        pre_key_bundle_private = PreKeyBundlePrivate.load_data(location=location)
+        onetime_key = pre_key_bundle_private.OP_key_private[0]
+        pre_key_bundle_private.OP_key_private.pop(0)
+
+        pre_key_bundle_private.dump_keys(location)
+        return EphemeralKeyBundlePrivate(IK_private=pre_key_bundle_private.IK_private,
+                                         IK_public=pre_key_bundle_private.IK_public, ephemeral_key_private=onetime_key,
+                                         ephemeral_key_public=onetime_key.public_key())
 
 
 class PreKeyBundlePublic:
@@ -130,14 +143,16 @@ class PreKeyBundlePrivate:
 
 def create_new_ephemeral_key_bundle():
     IK_keys = generate_keys()
-    return EphemeralKeyBundlePrivate(IK_public=IK_keys[1], IK_private=IK_keys[0])
+    epk_keys = generate_keys()
+    return EphemeralKeyBundlePrivate(IK_public=IK_keys[1], IK_private=IK_keys[0], ephemeral_key_private=epk_keys[0],
+                                     ephemeral_key_public=epk_keys[1])
 
 
 def create_new_pre_key_bundle(number_of_onetime_pre_keys: int):
     OP_key_private = [X25519PrivateKey.generate() for count in range(number_of_onetime_pre_keys)]
     IK_keys = generate_keys()
     SPK_keys = generate_keys()
-    pre_key_bundle_private = PreKeyBundlePrivate(IK_private=IK_keys[0], IK_public=IK_keys[1], SPK_private=SPK_keys[0],
+    pre_key_bundle_private = PreKeyBundlePrivate(IK_public=IK_keys[1], IK_private=IK_keys[0], SPK_private=SPK_keys[0],
                                                  SPK_public=SPK_keys[1], OP_key_private=OP_key_private)
     return pre_key_bundle_private
 
