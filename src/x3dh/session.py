@@ -20,7 +20,7 @@ def key_derivation_function(shared_key: bytes, salt: bytes = None):
     return HKDF(
         algorithm=hashes.SHA256(),
         length=128,
-        salt=None,
+        salt=salt,
         info=b'handshake data',
     ).derive(shared_key)
 

@@ -1,4 +1,4 @@
-from src.x3dh.ephemeral_key_bundles import create_new_ephemeral_key_bundle, EphemeralKeyBundlePrivate
+from src.x3dh.ephemeral_key_bundles import create_new_ephemeral_key_bundle
 from src.x3dh.pre_key_bundles import create_new_pre_key_bundle
 from src.x3dh.session import Session, Mode
 
@@ -25,7 +25,6 @@ if __name__ == '__main__':
     for i in range(20):
         print(x1.shared_key)
         print(x2.shared_key)
-        print(x1.shared_key == x2.shared_key)
         print(x1.ratchet_count)
 
         if i % 4 == 0:
@@ -34,6 +33,7 @@ if __name__ == '__main__':
 
             x1.update_diffie_hellman_keys()
             x2.update_diffie_hellman_keys()
+            print(x1.shared_key == x2.shared_key)
         else:
             x1.symmetric_key_ratchet()
             x2.symmetric_key_ratchet()
