@@ -6,6 +6,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
+from exceptions.keys_exception import InvalidMode
 from src.x3dh.ephemeral_key_bundles import EphemeralKeyBundlePublic, EphemeralKeyBundlePrivate
 from src.x3dh.pre_key_bundles import PreKeyBundlePrivate, PreKeyBundlePublic, generate_keys
 
@@ -53,17 +54,19 @@ class GenerateSession:
 class Session:
     def __init__(self, pre_key_bundle, ephemeral_key_bundle, mode: Mode):
         self.mode = mode
-        self.shared_key: bytes = None
-        self.salt: bytes = None
+        self.shared_key: bytes = b''
+        self.salt: bytes = b''
         self.ratchet_count: int = 0
         self.DH_key_private, self.DH_key_public = generate_keys()
         if self.mode == Mode.alice:
             self.shared_key = GenerateSession.generate_shared_key_from_pre_key_bundle(
                 pre_key_bundle_public=pre_key_bundle, ephemeral_key_bundle_private=ephemeral_key_bundle)
-        else:
+        elif self.mode == Mode.bob:
             self.shared_key = GenerateSession.generate_shared_key_from_ephemeral_key(
                 pre_key_bundle_private=pre_key_bundle,
                 ephemeral_key_bundle_public=ephemeral_key_bundle)
+        else:
+            raise InvalidMode
 
     def get_shared_key(self):
         sha = hashlib.sha256()

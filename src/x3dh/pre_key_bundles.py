@@ -5,6 +5,7 @@ import pickle
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 
+from exceptions.keys_exception import OneTimeKeysListEmpty, KeysNotFound, FileLocationNotValid
 from src.EdDSA.signature import sign_public_key, verify_public_key
 from src.x3dh.abstract_class import PublicKey, PrivateKey
 
@@ -54,7 +55,12 @@ class PreKeyBundlePrivate(PrivateKey):
         self.OP_key_private = OP_key_private
 
     def publish_keys(self) -> PreKeyBundlePublic:
-        one_time_key = self.OP_key_private[0]
+        one_time_key: X25519PrivateKey = None
+        try:
+            one_time_key = self.OP_key_private[0]
+        except IndexError:
+            raise OneTimeKeysListEmpty
+
         keys = {
             'IK_public': self.IK_public.public_bytes(serialization.Encoding.Raw,
                                                      serialization.PublicFormat.Raw),
@@ -86,15 +92,21 @@ class PreKeyBundlePrivate(PrivateKey):
     @staticmethod
     def load_data(location: str) -> PreKeyBundlePrivate:
         keys = None
-        with open(location, 'rb') as pre_keys:
-            keys = pickle.load(pre_keys)
+        try:
+            with open(location, 'rb') as pre_keys:
+                keys = pickle.load(pre_keys)
+        except IOError:
+            raise FileLocationNotValid
+
         if keys is not None:
             keys['IK_private'] = X25519PrivateKey.from_private_bytes(keys['IK_private'])
             keys['IK_public'] = X25519PublicKey.from_public_bytes(keys['IK_public'])
             keys['SPK_private'] = X25519PrivateKey.from_private_bytes(keys['SPK_private'])
             keys['SPK_public'] = X25519PublicKey.from_public_bytes(keys['SPK_public'])
             keys['OP_key_private'] = [X25519PrivateKey.from_private_bytes(key) for key in keys['OP_key_private']]
-        return PreKeyBundlePrivate(**keys)
+            return PreKeyBundlePrivate(**keys)
+        else:
+            raise KeysNotFound
 
 
 def create_new_pre_key_bundle(number_of_onetime_pre_keys: int):
