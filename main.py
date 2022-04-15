@@ -1,18 +1,18 @@
-from src.x3dh.key_bundles import PreKeyBundlePrivate, \
-    EphemeralKeyBundlePrivate, create_new_ephemeral_key_bundle, create_new_pre_key_bundle
+from src.x3dh.ephemeral_key_bundles import create_new_ephemeral_key_bundle
+from src.x3dh.pre_key_bundles import create_new_pre_key_bundle
 from src.x3dh.session import Session, Mode
 
 if __name__ == '__main__':
     # alice
     # alice = create_new_pre_key_bundle(number_of_onetime_pre_keys=10)
-    alice = EphemeralKeyBundlePrivate.load_data('key.txt')
+    # alice = EphemeralKeyBundlePrivate.load_data('key.txt')
     # alice.dump_keys('key.txt')
-    # alice = create_new_ephemeral_key_bundle()
+    alice = create_new_ephemeral_key_bundle()
     alice_ephemeral_keys = alice.publish_keys()
 
     # bob
-    bob = PreKeyBundlePrivate.load_data('key1.txt')
-    # bob = create_new_pre_key_bundle(number_of_onetime_pre_keys=10)
+    # bob = PreKeyBundlePrivate.load_data('key1.txt')
+    bob = create_new_pre_key_bundle(number_of_onetime_pre_keys=10)
     # bob.dump_keys('key1.txt')
     bob_pre_key_bundle = bob.publish_keys()
 

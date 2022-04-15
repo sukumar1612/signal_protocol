@@ -6,8 +6,8 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
-from src.x3dh.key_bundles import PreKeyBundlePrivate, PreKeyBundlePublic, EphemeralKeyBundlePrivate, \
-    create_new_pre_key_bundle, EphemeralKeyBundlePublic, create_new_ephemeral_key_bundle, generate_keys
+from src.x3dh.ephemeral_key_bundles import EphemeralKeyBundlePublic, EphemeralKeyBundlePrivate
+from src.x3dh.pre_key_bundles import PreKeyBundlePrivate, PreKeyBundlePublic, generate_keys
 
 
 class Mode(enum.Enum):
@@ -24,20 +24,7 @@ def key_derivation_function(shared_key: bytes, salt: bytes = None):
     ).derive(shared_key)
 
 
-class Session:
-    def __init__(self, pre_key_bundle, ephemeral_key_bundle, mode: Mode):
-        self.mode = mode
-        self.shared_key: bytes = None
-        self.salt: bytes = None
-        self.ratchet_count: int = 0
-        self.DH_key_private, self.DH_key_public = generate_keys()
-        if self.mode == Mode.alice:
-            self.shared_key = Session.generate_shared_key_from_pre_key_bundle(
-                pre_key_bundle_public=pre_key_bundle, ephemeral_key_bundle_private=ephemeral_key_bundle)
-        else:
-            self.shared_key = Session.generate_shared_key_from_ephemeral_key(pre_key_bundle_private=pre_key_bundle,
-                                                                             ephemeral_key_bundle_public=ephemeral_key_bundle)
-
+class GenerateSession:
     @staticmethod
     def generate_shared_key_from_pre_key_bundle(pre_key_bundle_public: PreKeyBundlePublic,
                                                 ephemeral_key_bundle_private: EphemeralKeyBundlePrivate):
@@ -62,6 +49,27 @@ class Session:
 
         return key_derivation_function(DH1 + DH2 + DH3 + DH4)
 
+
+class Session:
+    def __init__(self, pre_key_bundle, ephemeral_key_bundle, mode: Mode):
+        self.mode = mode
+        self.shared_key: bytes = None
+        self.salt: bytes = None
+        self.ratchet_count: int = 0
+        self.DH_key_private, self.DH_key_public = generate_keys()
+        if self.mode == Mode.alice:
+            self.shared_key = GenerateSession.generate_shared_key_from_pre_key_bundle(
+                pre_key_bundle_public=pre_key_bundle, ephemeral_key_bundle_private=ephemeral_key_bundle)
+        else:
+            self.shared_key = GenerateSession.generate_shared_key_from_ephemeral_key(
+                pre_key_bundle_private=pre_key_bundle,
+                ephemeral_key_bundle_public=ephemeral_key_bundle)
+
+    def get_shared_key(self):
+        sha = hashlib.sha256()
+        sha.update(self.shared_key)
+        return sha.digest()
+
     def symmetric_key_ratchet(self):
         self.ratchet_count += 1
         self.shared_key = key_derivation_function(self.shared_key, self.salt)
@@ -74,11 +82,6 @@ class Session:
     def update_diffie_hellman_keys(self):
         self.DH_key_private, self.DH_key_public = generate_keys()
 
-    def get_shared_key(self):
-        sha = hashlib.sha256()
-        sha.update(self.shared_key)
-        return sha.digest()
-
     def encrypt_message(self, message: str):
         cipher = Cipher(algorithms.AES(self.get_shared_key()), modes.ECB())
         encryptor = cipher.encryptor()
@@ -88,4 +91,3 @@ class Session:
         cipher = Cipher(algorithms.AES(self.get_shared_key()), modes.ECB())
         decrypter = cipher.decryptor()
         return decrypter.update(message) + decrypter.finalize()
-

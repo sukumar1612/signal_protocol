@@ -1,59 +1,15 @@
+from __future__ import annotations
+
 import pickle
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 
 from src.EdDSA.signature import sign_public_key, verify_public_key
+from src.x3dh.abstract_class import PublicKey, PrivateKey
 
 
-class EphemeralKeyBundlePublic:
-    """ enter keys in RAW bytes format"""
-
-    def __init__(self, IK_public: bytes, ephemeral_key_public: bytes):
-        self.IK_public = X25519PublicKey.from_public_bytes(IK_public)
-        self.ephemeral_key_public = X25519PublicKey.from_public_bytes(ephemeral_key_public)
-
-    def export(self):
-        return {
-            'IK_public': self.IK_public.public_bytes(serialization.Encoding.Raw,
-                                                     serialization.PublicFormat.Raw),
-            'ephemeral_key_public': self.ephemeral_key_public.public_bytes(serialization.Encoding.Raw,
-                                                                           serialization.PublicFormat.Raw)
-        }
-
-
-class EphemeralKeyBundlePrivate:
-    """In the example given in the signal documentation, this would be the alice side of things"""
-
-    def __init__(self, IK_public: X25519PublicKey, IK_private: X25519PrivateKey,
-                 ephemeral_key_public: X25519PublicKey, ephemeral_key_private: X25519PrivateKey):
-        self.IK_private = IK_private
-        self.IK_public = IK_public
-        self.ephemeral_key_private = ephemeral_key_private
-        self.ephemeral_key_public = ephemeral_key_public
-
-    def publish_keys(self):
-        keys = {
-            'IK_public': self.IK_public.public_bytes(serialization.Encoding.Raw,
-                                                     serialization.PublicFormat.Raw),
-            'ephemeral_key_public': self.ephemeral_key_public.public_bytes(serialization.Encoding.Raw,
-                                                                           serialization.PublicFormat.Raw)
-        }
-        return EphemeralKeyBundlePublic(**keys)
-
-    @staticmethod
-    def load_data(location: str):
-        pre_key_bundle_private = PreKeyBundlePrivate.load_data(location=location)
-        onetime_key = pre_key_bundle_private.OP_key_private[0]
-        pre_key_bundle_private.OP_key_private.pop(0)
-
-        pre_key_bundle_private.dump_keys(location)
-        return EphemeralKeyBundlePrivate(IK_private=pre_key_bundle_private.IK_private,
-                                         IK_public=pre_key_bundle_private.IK_public, ephemeral_key_private=onetime_key,
-                                         ephemeral_key_public=onetime_key.public_key())
-
-
-class PreKeyBundlePublic:
+class PreKeyBundlePublic(PublicKey):
     """ enter keys in RAW bytes format"""
 
     def __init__(self, IK_public: bytes, SPK_public: bytes, signature: bytes, OP_key_public: bytes,
@@ -64,7 +20,7 @@ class PreKeyBundlePublic:
         self.OP_key_public = X25519PublicKey.from_public_bytes(OP_key_public)
         self.verify_signature_public_key = verify_signature_public_key
 
-    def export_keys(self):
+    def export_keys(self) -> dict:
         return {
             'IK_public': self.IK_public.public_bytes(serialization.Encoding.Raw,
                                                      serialization.PublicFormat.Raw),
@@ -76,12 +32,12 @@ class PreKeyBundlePublic:
             'verify_signature_public_key': self.verify_signature_public_key,
         }
 
-    def verify_signature(self):
+    def verify_signature(self) -> bool:
         return verify_public_key(verify_signature_public_key=self.verify_signature_public_key,
                                  signed_public_key=self.signature)
 
 
-class PreKeyBundlePrivate:
+class PreKeyBundlePrivate(PrivateKey):
     """In the example given in the signal documentation, this would be the bob side of things"""
 
     def __init__(self, IK_private: X25519PrivateKey, IK_public: X25519PublicKey, SPK_private: X25519PrivateKey,
@@ -111,7 +67,7 @@ class PreKeyBundlePrivate:
         }
         return PreKeyBundlePublic(**keys)
 
-    def dump_keys(self, location):
+    def dump_keys(self, location) -> None:
         keys = {
             'IK_private': self.IK_private.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
                                                         serialization.NoEncryption()),
@@ -128,7 +84,7 @@ class PreKeyBundlePrivate:
             pickle.dump(keys, pre_keys)
 
     @staticmethod
-    def load_data(location: str):
+    def load_data(location: str) -> PreKeyBundlePrivate:
         keys = None
         with open(location, 'rb') as pre_keys:
             keys = pickle.load(pre_keys)
@@ -141,13 +97,6 @@ class PreKeyBundlePrivate:
         return PreKeyBundlePrivate(**keys)
 
 
-def create_new_ephemeral_key_bundle():
-    IK_keys = generate_keys()
-    epk_keys = generate_keys()
-    return EphemeralKeyBundlePrivate(IK_public=IK_keys[1], IK_private=IK_keys[0], ephemeral_key_private=epk_keys[0],
-                                     ephemeral_key_public=epk_keys[1])
-
-
 def create_new_pre_key_bundle(number_of_onetime_pre_keys: int):
     OP_key_private = [X25519PrivateKey.generate() for count in range(number_of_onetime_pre_keys)]
     IK_keys = generate_keys()
@@ -157,13 +106,11 @@ def create_new_pre_key_bundle(number_of_onetime_pre_keys: int):
     return pre_key_bundle_private
 
 
+def add_new_onetime_keys(keys: PreKeyBundlePrivate, number_of_onetime_pre_keys: int):
+    for count in range(number_of_onetime_pre_keys):
+        keys.OP_key_private.append(X25519PrivateKey.generate())
+
+
 def generate_keys():
     key_private = X25519PrivateKey.generate()
     return key_private, key_private.public_key()
-
-
-if __name__ == "__main__":
-    x = create_new_pre_key_bundle(number_of_onetime_pre_keys=10)
-    print(x.publish_keys().export_keys())
-    x.dump_keys(location='pre_key.bundle')
-    print(PreKeyBundlePrivate.load_data(location='pre_key.bundle').publish_keys().export_keys())
