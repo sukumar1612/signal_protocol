@@ -1,8 +1,9 @@
 import os
 import unittest
 
-from src.x3dh.abstract_class import ImportExportMode
 from src.x3dh.factory import CreateKeys
+from src.x3dh.interface import ImportExportMode
+from src.x3dh.pre_key_bundles import PreKeyBundlePublic
 
 
 class TestPreKeyBundles(unittest.TestCase):
@@ -15,6 +16,11 @@ class TestPreKeyBundles(unittest.TestCase):
 
     def test_export_public_key(self):
         self.assertTrue(type(self.bob.publish_keys().export_keys()) == dict)
+
+    def test_exported_public_key(self):
+        dct = self.bob.publish_keys().export_keys()
+        bob1 = PreKeyBundlePublic(**dct)
+        self.assertTrue(dct == bob1.export_keys())
 
     def test_dump_and_load_data_from_file(self):
         bob1 = CreateKeys.load_pre_key_bundle(mode=ImportExportMode.file, location="key1.txt")

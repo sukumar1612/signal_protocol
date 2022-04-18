@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from src.x3dh.abstract_class import ImportExportMode
+from src.x3dh.interface import ImportExportMode
 from src.x3dh.factory import CreateKeys
 from src.x3dh.session import Mode, Session
 
