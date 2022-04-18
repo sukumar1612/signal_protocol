@@ -23,17 +23,25 @@ class TestPreKeyBundles(unittest.TestCase):
         self.assertTrue(dct == bob1.export_keys())
 
     def test_dump_and_load_data_from_file(self):
-        bob1 = CreateKeys.load_pre_key_bundle(mode=ImportExportMode.file, location="key1.txt")
+        bob1 = CreateKeys.load_pre_key_bundle(
+            mode=ImportExportMode.file, location="key1.txt"
+        )
         self.assertTrue(
-            bob1.dump_keys(mode=ImportExportMode.dictionary) == self.bob.dump_keys(mode=ImportExportMode.dictionary))
+            bob1.dump_keys(mode=ImportExportMode.dictionary)
+            == self.bob.dump_keys(mode=ImportExportMode.dictionary)
+        )
 
     def test_dump_and_load_data_from_dictionary(self):
-        bob1 = CreateKeys.load_pre_key_bundle(mode=ImportExportMode.dictionary,
-                                              keys_dictionary=self.bob.dump_keys(mode=ImportExportMode.dictionary))
+        bob1 = CreateKeys.load_pre_key_bundle(
+            mode=ImportExportMode.dictionary,
+            keys_dictionary=self.bob.dump_keys(mode=ImportExportMode.dictionary),
+        )
 
         self.assertTrue(
-            bob1.dump_keys(mode=ImportExportMode.dictionary) == self.bob.dump_keys(mode=ImportExportMode.dictionary))
+            bob1.dump_keys(mode=ImportExportMode.dictionary)
+            == self.bob.dump_keys(mode=ImportExportMode.dictionary)
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -23,5 +23,9 @@ class PrivateKey(ABC):
 
     @staticmethod
     @abstractmethod
-    def load_data(mode: ImportExportMode, location: Optional[str] = None, keys_dictionary: dict = None) -> PrivateKey:
+    def load_data(
+        mode: ImportExportMode,
+        location: Optional[str] = None,
+        keys_dictionary: dict = None,
+    ) -> PrivateKey:
         pass

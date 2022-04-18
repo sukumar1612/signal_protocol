@@ -17,7 +17,7 @@ class SignedMessage(bytes):
 
     @classmethod
     def from_parts(
-            cls, signature: bytes, message: bytes, combined: bytes
+        cls, signature: bytes, message: bytes, combined: bytes
     ) -> "SignedMessage":
         obj = cls(combined)
         obj._signature = signature
@@ -34,9 +34,7 @@ class SignedMessage(bytes):
 
 
 class VerifyKey(encoding.Encodable, StringFixer):
-    def __init__(
-            self, key: bytes, encoder: encoding.Encoder = encoding.RawEncoder
-    ):
+    def __init__(self, key: bytes, encoder: encoding.Encoder = encoding.RawEncoder):
         key = encoder.decode(key)
         if not isinstance(key, bytes):
             raise exc.TypeError("VerifyKey must be created from 32 bytes")
@@ -64,10 +62,10 @@ class VerifyKey(encoding.Encodable, StringFixer):
         return not (self == other)
 
     def verify(
-            self,
-            smessage: bytes,
-            signature: Optional[bytes] = None,
-            encoder: encoding.Encoder = encoding.RawEncoder,
+        self,
+        smessage: bytes,
+        signature: Optional[bytes] = None,
+        encoder: encoding.Encoder = encoding.RawEncoder,
     ) -> bytes:
         if signature is not None:
             if not isinstance(signature, bytes):
@@ -95,15 +93,13 @@ class VerifyKey(encoding.Encodable, StringFixer):
 
 class SigningKey(encoding.Encodable, StringFixer):
     def __init__(
-            self,
-            seed: bytes,
-            encoder: encoding.Encoder = encoding.RawEncoder,
+        self,
+        seed: bytes,
+        encoder: encoding.Encoder = encoding.RawEncoder,
     ):
         seed = encoder.decode(seed)
         if not isinstance(seed, bytes):
-            raise exc.TypeError(
-                "SigningKey must be created from a 32 byte seed"
-            )
+            raise exc.TypeError("SigningKey must be created from a 32 byte seed")
 
         if len(seed) != nacl.bindings.crypto_sign_SEEDBYTES:
             raise exc.ValueError(
@@ -139,9 +135,9 @@ class SigningKey(encoding.Encodable, StringFixer):
         )
 
     def sign(
-            self,
-            message: bytes,
-            encoder: encoding.Encoder = encoding.RawEncoder,
+        self,
+        message: bytes,
+        encoder: encoding.Encoder = encoding.RawEncoder,
     ) -> SignedMessage:
 
         raw_signed = nacl.bindings.crypto_sign(message, self._signing_key)
@@ -168,7 +164,9 @@ def sign_public_key(seed: bytes, public_key: bytes) -> tuple:
     return signed, verify_key_bytes
 
 
-def verify_public_key(verify_signature_public_key: bytes, signed_public_key: bytes) -> bool:
+def verify_public_key(
+    verify_signature_public_key: bytes, signed_public_key: bytes
+) -> bool:
     verify_key = VerifyKey(verify_signature_public_key)
     verify_key.verify(signed_public_key)
 

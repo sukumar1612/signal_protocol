@@ -18,17 +18,26 @@ class TestSession(unittest.TestCase):
     def setUp(self):
         TestSession.create_keys()
 
-        self.alice = CreateKeys.load_ephemeral_key_bundle_from_pre_key_bundle(mode=ImportExportMode.file,
-                                                                              location="key.txt")
+        self.alice = CreateKeys.load_ephemeral_key_bundle_from_pre_key_bundle(
+            mode=ImportExportMode.file, location="key.txt"
+        )
         self.alice_ephemeral_keys = self.alice.publish_keys()
 
-        self.bob = CreateKeys.load_pre_key_bundle(mode=ImportExportMode.file, location="key1.txt")
+        self.bob = CreateKeys.load_pre_key_bundle(
+            mode=ImportExportMode.file, location="key1.txt"
+        )
         self.bob_pre_key_bundle = self.bob.publish_keys()
 
-        self.alice_session = Session(pre_key_bundle=self.bob_pre_key_bundle, ephemeral_key_bundle=self.alice,
-                                     mode=Mode.alice)
-        self.bob_session = Session(pre_key_bundle=self.bob, ephemeral_key_bundle=self.alice_ephemeral_keys,
-                                   mode=Mode.bob)
+        self.alice_session = Session(
+            pre_key_bundle=self.bob_pre_key_bundle,
+            ephemeral_key_bundle=self.alice,
+            mode=Mode.alice,
+        )
+        self.bob_session = Session(
+            pre_key_bundle=self.bob,
+            ephemeral_key_bundle=self.alice_ephemeral_keys,
+            mode=Mode.bob,
+        )
 
     def tearDown(self):
         os.remove("key.txt")
@@ -49,11 +58,13 @@ class TestSession(unittest.TestCase):
                 self.alice_session.symmetric_key_ratchet()
                 self.bob_session.symmetric_key_ratchet()
 
-            msg1 = b'a secret message'
+            msg1 = b"a secret message"
             msg = self.alice_session.encrypt_message("a secret message")
             msg = self.bob_session.decrypt_message(msg)
             self.assertTrue(msg1 == msg)
-            self.assertTrue(self.alice_session.shared_key == self.bob_session.shared_key)
+            self.assertTrue(
+                self.alice_session.shared_key == self.bob_session.shared_key
+            )
 
 
 if __name__ == "__main__":

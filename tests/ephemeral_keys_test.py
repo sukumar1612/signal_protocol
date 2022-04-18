@@ -20,32 +20,49 @@ class TestEphemeralKeyBundles(unittest.TestCase):
         self.assertTrue(type(self.alice.publish_keys().export_keys()) == dict)
 
     def test_exported_public_key(self):
-        dct = CreateKeys.load_ephemeral_key_bundle_from_pre_key_bundle(mode=ImportExportMode.dictionary,
-                                                                       keys_dictionary=self.alice.dump_keys(
-                                                                           mode=ImportExportMode.dictionary))
+        dct = CreateKeys.load_ephemeral_key_bundle_from_pre_key_bundle(
+            mode=ImportExportMode.dictionary,
+            keys_dictionary=self.alice.dump_keys(mode=ImportExportMode.dictionary),
+        )
         dct = dct.publish_keys().export_keys()
         alice1 = EphemeralKeyBundlePublic(**dct)
         self.assertTrue(alice1.export_keys() == dct)
 
     def test_dump_and_load_data_from_file(self):
-        alice1 = CreateKeys.load_ephemeral_key_bundle_from_pre_key_bundle(mode=ImportExportMode.file,
-                                                                          location="key1.txt")
+        alice1 = CreateKeys.load_ephemeral_key_bundle_from_pre_key_bundle(
+            mode=ImportExportMode.file, location="key1.txt"
+        )
         self.assertTrue(
-            alice1.ik_private.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
-                                            serialization.NoEncryption()) == self.alice.ik_private.private_bytes(
-                serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
-                serialization.NoEncryption()))
+            alice1.ik_private.private_bytes(
+                serialization.Encoding.Raw,
+                serialization.PrivateFormat.Raw,
+                serialization.NoEncryption(),
+            )
+            == self.alice.ik_private.private_bytes(
+                serialization.Encoding.Raw,
+                serialization.PrivateFormat.Raw,
+                serialization.NoEncryption(),
+            )
+        )
 
     def test_dump_and_load_data_from_dictionary(self):
-        alice1 = CreateKeys.load_ephemeral_key_bundle_from_pre_key_bundle(mode=ImportExportMode.dictionary,
-                                                                          keys_dictionary=self.alice.dump_keys(
-                                                                              mode=ImportExportMode.dictionary))
+        alice1 = CreateKeys.load_ephemeral_key_bundle_from_pre_key_bundle(
+            mode=ImportExportMode.dictionary,
+            keys_dictionary=self.alice.dump_keys(mode=ImportExportMode.dictionary),
+        )
         self.assertTrue(
-            alice1.ik_private.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
-                                            serialization.NoEncryption()) == self.alice.ik_private.private_bytes(
-                serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
-                serialization.NoEncryption()))
+            alice1.ik_private.private_bytes(
+                serialization.Encoding.Raw,
+                serialization.PrivateFormat.Raw,
+                serialization.NoEncryption(),
+            )
+            == self.alice.ik_private.private_bytes(
+                serialization.Encoding.Raw,
+                serialization.PrivateFormat.Raw,
+                serialization.NoEncryption(),
+            )
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

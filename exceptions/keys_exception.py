@@ -4,7 +4,9 @@ from typing import Optional
 class KeysNotFound(Exception):
     """Exception: file does not contain the required keys"""
 
-    def __init__(self, message: Optional[str] = "file does not contain the required keys"):
+    def __init__(
+        self, message: Optional[str] = "file does not contain the required keys"
+    ):
         self.message = message
         super().__init__(self.message)
 
@@ -12,7 +14,9 @@ class KeysNotFound(Exception):
 class FileLocationNotValid(IOError):
     """Exception: File is not found at the given location"""
 
-    def __init__(self, message: Optional[str] = "File is not found at the given location"):
+    def __init__(
+        self, message: Optional[str] = "File is not found at the given location"
+    ):
         self.message = message
         super().__init__(self.message)
 
