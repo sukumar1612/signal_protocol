@@ -84,7 +84,7 @@ class Session:
         self.shared_key: bytes = b""
         self.salt: bytes = b""
         self.ratchet_count: int = 0
-        self.DH_key_private, self.DH_key_public = generate_keys()
+        self.dh_key_private, self.dh_key_public = generate_keys()
         if self.mode == Mode.alice:
             self.shared_key = GenerateSession.generate_shared_key_from_pre_key_bundle(
                 pre_key_bundle_public=pre_key_bundle,
@@ -108,12 +108,12 @@ class Session:
         self.shared_key = key_derivation_function(self.shared_key, self.salt)
 
     def double_ratchet(self, public_key: X25519PublicKey):
-        self.salt = self.DH_key_private.exchange(public_key)
+        self.salt = self.dh_key_private.exchange(public_key)
         self.ratchet_count = 0
         self.symmetric_key_ratchet()
 
     def update_diffie_hellman_keys(self):
-        self.DH_key_private, self.DH_key_public = generate_keys()
+        self.dh_key_private, self.dh_key_public = generate_keys()
 
     def encrypt_message(self, message: str):
         cipher = Cipher(algorithms.AES(self.get_shared_key()), modes.ECB())

@@ -1,8 +1,8 @@
 import os
 import unittest
 
-from src.x3dh.interface import ImportExportMode
 from src.x3dh.factory import CreateKeys
+from src.x3dh.interface import ImportExportMode
 from src.x3dh.session import Mode, Session
 
 
@@ -49,8 +49,8 @@ class TestSession(unittest.TestCase):
     def test_double_ratchet(self):
         for i in range(20):
             if i % 4 == 0:
-                self.alice_session.double_ratchet(self.bob_session.DH_key_public)
-                self.bob_session.double_ratchet(self.alice_session.DH_key_public)
+                self.alice_session.double_ratchet(self.bob_session.dh_key_public)
+                self.bob_session.double_ratchet(self.alice_session.dh_key_public)
 
                 self.alice_session.update_diffie_hellman_keys()
                 self.bob_session.update_diffie_hellman_keys()

@@ -14,7 +14,7 @@ from exceptions.keys_exception import (
     KeysNotFound,
     FileLocationNotValid,
 )
-from src.EdDSA.signature import sign_public_key, verify_public_key
+from src.EdDSA.sign_and_verify_functions import sign_public_key, verify_public_key
 from src.x3dh.interface import PublicKey, PrivateKey, ImportExportMode
 
 
