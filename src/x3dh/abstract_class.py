@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+import enum
 from abc import ABC, abstractmethod
+from typing import Optional
+
+
+class ImportExportMode(enum.Enum):
+    dictionary = "dictionary"
+    file = "file"
 
 
 class PublicKey(ABC):
@@ -16,5 +23,5 @@ class PrivateKey(ABC):
 
     @staticmethod
     @abstractmethod
-    def load_data(location: str) -> PrivateKey:
+    def load_data(mode: ImportExportMode, location: Optional[str] = None, keys_dictionary: dict = None) -> PrivateKey:
         pass

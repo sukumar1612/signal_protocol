@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import pickle
+from typing import Optional
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 
 from exceptions.keys_exception import OneTimeKeysListEmpty, KeysNotFound, FileLocationNotValid
 from src.EdDSA.signature import sign_public_key, verify_public_key
-from src.x3dh.abstract_class import PublicKey, PrivateKey
+from src.x3dh.abstract_class import PublicKey, PrivateKey, ImportExportMode
 
 
 class PreKeyBundlePublic(PublicKey):
@@ -73,7 +74,7 @@ class PreKeyBundlePrivate(PrivateKey):
         }
         return PreKeyBundlePublic(**keys)
 
-    def dump_keys(self, location) -> None:
+    def dump_keys(self, mode: ImportExportMode, location: Optional[str] = None) -> Optional[dict]:
         keys = {
             'IK_private': self.IK_private.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
                                                         serialization.NoEncryption()),
@@ -86,41 +87,36 @@ class PreKeyBundlePrivate(PrivateKey):
             'OP_key_private': [key.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
                                                  serialization.NoEncryption()) for key in self.OP_key_private]
         }
-        with open(location, 'wb') as pre_keys:
-            pickle.dump(keys, pre_keys)
+        if mode == ImportExportMode.file:
+            with open(location, 'wb') as pre_keys:
+                pickle.dump(keys, pre_keys)
+            return
+
+        return keys
 
     @staticmethod
-    def load_data(location: str) -> PreKeyBundlePrivate:
-        keys = None
-        try:
-            with open(location, 'rb') as pre_keys:
-                keys = pickle.load(pre_keys)
-        except IOError:
-            raise FileLocationNotValid
+    def load_data(mode: ImportExportMode, location: Optional[str] = None,
+                  keys_dictionary: dict = None) -> PreKeyBundlePrivate:
+        keys_dict: dict = keys_dictionary
+        if mode == ImportExportMode.file:
+            try:
+                with open(location, 'rb') as pre_keys:
+                    keys_dict = pickle.load(pre_keys)
+            except IOError:
+                raise FileLocationNotValid
 
-        if keys is not None:
-            keys['IK_private'] = X25519PrivateKey.from_private_bytes(keys['IK_private'])
-            keys['IK_public'] = X25519PublicKey.from_public_bytes(keys['IK_public'])
-            keys['SPK_private'] = X25519PrivateKey.from_private_bytes(keys['SPK_private'])
-            keys['SPK_public'] = X25519PublicKey.from_public_bytes(keys['SPK_public'])
-            keys['OP_key_private'] = [X25519PrivateKey.from_private_bytes(key) for key in keys['OP_key_private']]
-            return PreKeyBundlePrivate(**keys)
-        else:
+        key_list = ['IK_private', 'IK_public', 'SPK_private', 'SPK_public', 'OP_key_private']
+        if keys_dict is None or set(keys_dict.keys()) != set(key_list):
             raise KeysNotFound
+        else:
+            keys_dict['IK_private'] = X25519PrivateKey.from_private_bytes(keys_dict['IK_private'])
+            keys_dict['IK_public'] = X25519PublicKey.from_public_bytes(keys_dict['IK_public'])
+            keys_dict['SPK_private'] = X25519PrivateKey.from_private_bytes(keys_dict['SPK_private'])
+            keys_dict['SPK_public'] = X25519PublicKey.from_public_bytes(keys_dict['SPK_public'])
+            keys_dict['OP_key_private'] = [X25519PrivateKey.from_private_bytes(key) for key in
+                                           keys_dict['OP_key_private']]
 
-
-def create_new_pre_key_bundle(number_of_onetime_pre_keys: int):
-    OP_key_private = [X25519PrivateKey.generate() for count in range(number_of_onetime_pre_keys)]
-    IK_keys = generate_keys()
-    SPK_keys = generate_keys()
-    pre_key_bundle_private = PreKeyBundlePrivate(IK_public=IK_keys[1], IK_private=IK_keys[0], SPK_private=SPK_keys[0],
-                                                 SPK_public=SPK_keys[1], OP_key_private=OP_key_private)
-    return pre_key_bundle_private
-
-
-def add_new_onetime_keys(keys: PreKeyBundlePrivate, number_of_onetime_pre_keys: int):
-    for count in range(number_of_onetime_pre_keys):
-        keys.OP_key_private.append(X25519PrivateKey.generate())
+        return PreKeyBundlePrivate(**keys_dict)
 
 
 def generate_keys():
