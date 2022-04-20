@@ -9,10 +9,10 @@ from src.x3dh.session import Mode, Session
 class TestSession(unittest.TestCase):
     @staticmethod
     def create_keys():
-        alice = CreateKeys.create_new_pre_key_bundle(number_of_onetime_pre_keys=10)
+        alice = CreateKeys.create_new_pre_key_bundle(number_of_onetime_pre_keys=5)
         alice.dump_keys(mode=ImportExportMode.file, location="key.txt")
 
-        bob = CreateKeys.create_new_pre_key_bundle(number_of_onetime_pre_keys=10)
+        bob = CreateKeys.create_new_pre_key_bundle(number_of_onetime_pre_keys=5)
         bob.dump_keys(mode=ImportExportMode.file, location="key1.txt")
 
     def setUp(self):

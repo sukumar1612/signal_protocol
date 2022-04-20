@@ -10,7 +10,6 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import (
 )
 
 from exceptions.keys_exception import (
-    OneTimeKeysListEmpty,
     KeysNotFound,
     FileLocationNotValid,
 )
@@ -26,13 +25,15 @@ class PreKeyBundlePublic(PublicKey):
         ik_public: bytes,
         spk_public: bytes,
         signature: bytes,
-        op_key_public: bytes,
+        op_key_public: list,
         verify_signature_public_key: bytes,
     ):
         self.ik_public = X25519PublicKey.from_public_bytes(ik_public)
         self.spk_public = X25519PublicKey.from_public_bytes(spk_public)
         self.signature = signature
-        self.op_key_public = X25519PublicKey.from_public_bytes(op_key_public)
+        self.op_key_public = [
+            X25519PublicKey.from_public_bytes(key) for key in op_key_public
+        ]
         self.verify_signature_public_key = verify_signature_public_key
 
     def export_keys(self) -> dict:
@@ -44,9 +45,12 @@ class PreKeyBundlePublic(PublicKey):
                 serialization.Encoding.Raw, serialization.PublicFormat.Raw
             ),
             "signature": self.signature,
-            "op_key_public": self.op_key_public.public_bytes(
-                serialization.Encoding.Raw, serialization.PublicFormat.Raw
-            ),
+            "op_key_public": [
+                key.public_bytes(
+                    serialization.Encoding.Raw, serialization.PublicFormat.Raw
+                )
+                for key in self.op_key_public
+            ],
             "verify_signature_public_key": self.verify_signature_public_key,
         }
 
@@ -85,12 +89,6 @@ class PreKeyBundlePrivate(PrivateKey):
         self.op_key_private = op_key_private
 
     def publish_keys(self) -> PreKeyBundlePublic:
-        one_time_key: X25519PrivateKey = None
-        try:
-            one_time_key = self.op_key_private[0]
-        except IndexError:
-            raise OneTimeKeysListEmpty
-
         keys = {
             "ik_public": self.ik_public.public_bytes(
                 serialization.Encoding.Raw, serialization.PublicFormat.Raw
@@ -99,9 +97,12 @@ class PreKeyBundlePrivate(PrivateKey):
                 serialization.Encoding.Raw, serialization.PublicFormat.Raw
             ),
             "signature": self.signature,
-            "op_key_public": one_time_key.public_key().public_bytes(
-                serialization.Encoding.Raw, serialization.PublicFormat.Raw
-            ),
+            "op_key_public": [
+                key.public_key().public_bytes(
+                    serialization.Encoding.Raw, serialization.PublicFormat.Raw
+                )
+                for key in self.op_key_private
+            ],
             "verify_signature_public_key": self.verify_signature_public_key,
         }
         return PreKeyBundlePublic(**keys)

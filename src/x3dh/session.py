@@ -48,7 +48,7 @@ class GenerateSession:
             pre_key_bundle_public.spk_public
         )
         DH4 = ephemeral_key_bundle_private.ephemeral_key_private.exchange(
-            pre_key_bundle_public.op_key_public
+            pre_key_bundle_public.op_key_public.pop(0)
         )
 
         if pre_key_bundle_public.verify_signature():
