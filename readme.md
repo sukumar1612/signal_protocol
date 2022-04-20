@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/Syndace/python-xeddsa.svg?branch=master)](https://travis-ci.org/Syndace/python-xeddsa)
-
 # Python Signal Protocol
 
 This library is my take on signal protocol
